@@ -19,6 +19,7 @@ package wire is
 		etval  : std_logic_vector(63 downto 0);
 		ecause : std_logic_vector(3 downto 0);
 		exc    : std_logic;
+		clear  : std_logic;
 	end record;
 
 	type fetch_reg_type is record
@@ -95,6 +96,7 @@ package wire is
 		fence       : std_logic;
 		valid       : std_logic;
 		stall       : std_logic;
+		clear       : std_logic;
 	end record;
 
 	type decode_reg_type is record
@@ -258,6 +260,7 @@ package wire is
 		mret        : std_logic;
 		valid       : std_logic;
 		stall       : std_logic;
+		clear       : std_logic;
 	end record;
 
 	type execute_reg_type is record
@@ -402,6 +405,7 @@ package wire is
 		mret       : std_logic;
 		valid      : std_logic;
 		stall      : std_logic;
+		clear      : std_logic;
 	end record;
 
 	type memory_reg_type is record
@@ -610,12 +614,13 @@ package wire is
 	end record;
 
 	type prefetch_in_type is record
-		pc        : std_logic_vector(63 downto 0);
-		npc       : std_logic_vector(63 downto 0);
-		jump      : std_logic;
-		fence     : std_logic;
-		mem_rdata : std_logic_vector(63 downto 0);
-		mem_ready : std_logic;
+		pc    : std_logic_vector(63 downto 0);
+		npc   : std_logic_vector(63 downto 0);
+		spec  : std_logic;
+		fence : std_logic;
+		valid : std_logic;
+		rdata : std_logic_vector(63 downto 0);
+		ready : std_logic;
 	end record;
 
 	type prefetch_out_type is record
@@ -624,7 +629,18 @@ package wire is
 		stall : std_logic;
 	end record;
 
-	type btb_in_type is record
+	type prebuffer_in_type is record
+		raddr : integer range 0 to 2**pfetch_depth-1;
+		wren  : std_logic;
+		waddr : integer range 0 to 2**pfetch_depth-1;
+		wdata : std_logic_vector(63 downto 0);
+	end record;
+
+	type prebuffer_out_type is record
+		rdata : std_logic_vector(31 downto 0);
+	end record;
+
+	type bp_in_type is record
 		get_pc     : std_logic_vector(63 downto 0);
 		get_branch : std_logic;
 		get_return : std_logic;
@@ -640,13 +656,170 @@ package wire is
 		clear      : std_logic;
 	end record;
 
-	type btb_out_type is record
+	type bp_out_type is record
 		pred_baddr  : std_logic_vector(63 downto 0);
 		pred_branch : std_logic;
 		pred_jump   : std_logic;
 		pred_raddr  : std_logic_vector(63 downto 0);
 		pred_return : std_logic;
 		pred_uncond : std_logic;
+	end record;
+
+	type bht_in_type is record
+		raddr1 : integer range 0 to 2**bht_depth-1;
+		raddr2 : integer range 0 to 2**bht_depth-1;
+		wen    : std_logic;
+		waddr  : integer range 0 to 2**bht_depth-1;
+		wdata  : unsigned(1 downto 0);
+	end record;
+
+	type bht_out_type is record
+		rdata1 : unsigned(1 downto 0);
+		rdata2 : unsigned(1 downto 0);
+	end record;
+
+	type btb_in_type is record
+		raddr : integer range 0 to 2**btb_depth-1;
+		wen   : std_logic;
+		waddr : integer range 0 to 2**btb_depth-1;
+		wdata : std_logic_vector(126-btb_depth downto 0);
+	end record;
+
+	type btb_out_type is record
+		rdata : std_logic_vector(126-btb_depth downto 0);
+	end record;
+
+	type ras_in_type is record
+		raddr : integer range 0 to 2**ras_depth-1;
+		wen   : std_logic;
+		waddr : integer range 0 to 2**ras_depth-1;
+		wdata : std_logic_vector(63 downto 0);
+	end record;
+
+	type ras_out_type is record
+		rdata : std_logic_vector(63 downto 0);
+	end record;
+
+	type data_in_type is record
+		raddr : integer range 0 to 2**icache_set_depth-1;
+		wen   : std_logic;
+		waddr : integer range 0 to 2**icache_set_depth-1;
+		wdata : std_logic_vector(255 downto 0);
+	end record;
+
+	type data_out_type is record
+		rdata : std_logic_vector(255 downto 0);
+	end record;
+
+	type tag_in_type is record
+		raddr : integer range 0 to 2**icache_set_depth-1;
+		wen   : std_logic;
+		waddr : integer range 0 to 2**icache_set_depth-1;
+		wdata : std_logic_vector(58-icache_set_depth downto 0);
+	end record;
+
+	type tag_out_type is record
+		rdata :  std_logic_vector(58-icache_set_depth downto 0);
+	end record;
+
+	type valid_in_type is record
+		raddr : integer range 0 to 2**icache_set_depth-1;
+		wen   : std_logic;
+		waddr : integer range 0 to 2**icache_set_depth-1;
+		wdata : std_logic_vector(7 downto 0);
+	end record;
+
+	type valid_out_type is record
+		rdata :  std_logic_vector(7 downto 0);
+	end record;
+
+	type lru_in_type is record
+		sid   : integer range 0 to 2**icache_set_depth-1;
+		wid   : integer range 0 to 7;
+		hit   : std_logic;
+		miss  : std_logic;
+	end record;
+
+	type lru_out_type is record
+		wid   : integer range 0 to 7;
+	end record;
+
+	type hit_in_type is record
+		tag   : std_logic_vector(58-icache_set_depth downto 0);
+		tag0  : std_logic_vector(58-icache_set_depth downto 0);
+		tag1  : std_logic_vector(58-icache_set_depth downto 0);
+		tag2  : std_logic_vector(58-icache_set_depth downto 0);
+		tag3  : std_logic_vector(58-icache_set_depth downto 0);
+		tag4  : std_logic_vector(58-icache_set_depth downto 0);
+		tag5  : std_logic_vector(58-icache_set_depth downto 0);
+		tag6  : std_logic_vector(58-icache_set_depth downto 0);
+		tag7  : std_logic_vector(58-icache_set_depth downto 0);
+		valid : std_logic_vector(7 downto 0);
+	end record;
+
+	type hit_out_type is record
+		hit   : std_logic;
+		miss  : std_logic;
+		wid   : integer range 0 to 7;
+	end record;
+
+	type ctrl_in_type is record
+		data0_o : data_out_type;
+		data1_o : data_out_type;
+		data2_o : data_out_type;
+		data3_o : data_out_type;
+		data4_o : data_out_type;
+		data5_o : data_out_type;
+		data6_o : data_out_type;
+		data7_o : data_out_type;
+		tag0_o  : tag_out_type;
+		tag1_o  : tag_out_type;
+		tag2_o  : tag_out_type;
+		tag3_o  : tag_out_type;
+		tag4_o  : tag_out_type;
+		tag5_o  : tag_out_type;
+		tag6_o  : tag_out_type;
+		tag7_o  : tag_out_type;
+		valid_o : valid_out_type;
+		lru_o   : lru_out_type;
+		hit_o   : hit_out_type;
+	end record;
+
+	type ctrl_out_type is record
+		data0_i : data_in_type;
+		data1_i : data_in_type;
+		data2_i : data_in_type;
+		data3_i : data_in_type;
+		data4_i : data_in_type;
+		data5_i : data_in_type;
+		data6_i : data_in_type;
+		data7_i : data_in_type;
+		tag0_i  : tag_in_type;
+		tag1_i  : tag_in_type;
+		tag2_i  : tag_in_type;
+		tag3_i  : tag_in_type;
+		tag4_i  : tag_in_type;
+		tag5_i  : tag_in_type;
+		tag6_i  : tag_in_type;
+		tag7_i  : tag_in_type;
+		valid_i : valid_in_type;
+		lru_i   : lru_in_type;
+		hit_i   : hit_in_type;
+	end record;
+
+	type cache_in_type is record
+		mem_valid   : std_logic;
+		mem_instr   : std_logic;
+		mem_spec    : std_logic;
+		mem_invalid : std_logic;
+		mem_addr    : std_logic_vector(63 downto 0);
+		mem_wdata   : std_logic_vector(63 downto 0);
+		mem_wstrb   : std_logic_vector(7 downto 0);
+	end record;
+
+	type cache_out_type is record
+		mem_ready : std_logic;
+		mem_rdata : std_logic_vector(63 downto 0);
 	end record;
 
 	type mem_in_type is record

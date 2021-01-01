@@ -2,9 +2,11 @@
 
 DIR=$1
 
-if [ ! -d "$DIR/sim/work" ]; then
-  mkdir $DIR/sim/work
+if [ -d "$DIR/sim/work" ]; then
+  rm -rf $DIR/sim/work
 fi
+
+mkdir $DIR/sim/work
 
 GHDL=$2
 
@@ -110,10 +112,36 @@ $ANALYS $DIR/vhdl/memory/timer.vhd
 $SYNTAX $DIR/vhdl/memory/uart.vhd
 $ANALYS $DIR/vhdl/memory/uart.vhd
 
-$SYNTAX $DIR/vhdl/speedup/prefetch.vhd
-$ANALYS $DIR/vhdl/speedup/prefetch.vhd
-$SYNTAX $DIR/vhdl/speedup/btb.vhd
-$ANALYS $DIR/vhdl/speedup/btb.vhd
+$SYNTAX $DIR/vhdl/cache/data.vhd
+$ANALYS $DIR/vhdl/cache/data.vhd
+$SYNTAX $DIR/vhdl/cache/tag.vhd
+$ANALYS $DIR/vhdl/cache/tag.vhd
+$SYNTAX $DIR/vhdl/cache/valid.vhd
+$ANALYS $DIR/vhdl/cache/valid.vhd
+$SYNTAX $DIR/vhdl/cache/hit.vhd
+$ANALYS $DIR/vhdl/cache/hit.vhd
+$SYNTAX $DIR/vhdl/cache/lru.vhd
+$ANALYS $DIR/vhdl/cache/lru.vhd
+$SYNTAX $DIR/vhdl/cache/ctrl.vhd
+$ANALYS $DIR/vhdl/cache/ctrl.vhd
+$SYNTAX $DIR/vhdl/cache/cache.vhd
+$ANALYS $DIR/vhdl/cache/cache.vhd
+
+$SYNTAX $DIR/vhdl/prefetch/prefetch.vhd
+$ANALYS $DIR/vhdl/prefetch/prefetch.vhd
+$SYNTAX $DIR/vhdl/prefetch/prectrl.vhd
+$ANALYS $DIR/vhdl/prefetch/prectrl.vhd
+$SYNTAX $DIR/vhdl/prefetch/prebuffer.vhd
+$ANALYS $DIR/vhdl/prefetch/prebuffer.vhd
+
+$SYNTAX $DIR/vhdl/bp/bht.vhd
+$ANALYS $DIR/vhdl/bp/bht.vhd
+$SYNTAX $DIR/vhdl/bp/btb.vhd
+$ANALYS $DIR/vhdl/bp/btb.vhd
+$SYNTAX $DIR/vhdl/bp/ras.vhd
+$ANALYS $DIR/vhdl/bp/ras.vhd
+$SYNTAX $DIR/vhdl/bp/bp.vhd
+$ANALYS $DIR/vhdl/bp/bp.vhd
 
 $SYNTAX $DIR/vhdl/tb/bram_mem.vhd
 $ANALYS $DIR/vhdl/tb/bram_mem.vhd
@@ -209,33 +237,45 @@ then
   if [ "$5" = 'wave' ]
   then
     WAVE="--wave=dhrystone.ghw"
+  elif [ "$5" = 'vcd' ]
+  then
+    WAVE="--vcd=dhrystone.vcd"
   fi
   cp $DIR/build/dhrystone/dat/dhrystone.dat bram_mem.dat
-  $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+  $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
 elif [ "$3" = 'coremark' ]
 then
   if [ "$5" = 'wave' ]
   then
     WAVE="--wave=coremark.ghw"
+  elif [ "$5" = 'vcd' ]
+  then
+    WAVE="--vcd=coremark.vcd"
   fi
   cp $DIR/build/coremark/dat/coremark.dat bram_mem.dat
-  $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+  $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
 elif [ "$3" = 'csmith' ]
 then
   if [ "$5" = 'wave' ]
   then
     WAVE="--wave=csmith.ghw"
+  elif [ "$5" = 'vcd' ]
+  then
+    WAVE="--vcd=csmith.vcd"
   fi
   cp $DIR/build/csmith/dat/csmith.dat bram_mem.dat
-  $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+  $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
 elif [ "$3" = 'torture' ]
 then
   if [ "$5" = 'wave' ]
   then
     WAVE="--wave=torture.ghw"
+  elif [ "$5" = 'vcd' ]
+  then
+    WAVE="--vcd=torture.vcd"
   fi
   cp $DIR/build/torture/dat/torture.dat bram_mem.dat
-  $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+  $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
 elif [ "$3" = 'all' ]
 then
   for filename in $DIR/build/isa/dat/*.dat; do
@@ -245,9 +285,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'mi' ]
 then
@@ -258,9 +301,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'ui' ]
 then
@@ -271,9 +317,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'uc' ]
 then
@@ -284,9 +333,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'um' ]
 then
@@ -297,9 +349,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'uf' ]
 then
@@ -310,9 +365,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 elif [ "$3" = 'ud' ]
 then
@@ -323,9 +381,12 @@ then
     if [ "$5" = 'wave' ]
     then
       WAVE="--wave=${filename}.ghw"
+    elif [ "$5" = 'vcd' ]
+    then
+      WAVE="--vcd=${filename}.vcd"
     fi
     echo "${filename}"
-    $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+    $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
   done
 else
   filename="$3"
@@ -334,9 +395,12 @@ else
   if [ "$5" = 'wave' ]
   then
     WAVE="--wave=${filename}.ghw"
+  elif [ "$5" = 'vcd' ]
+  then
+    WAVE="--vcd=${filename}.vcd"
   fi
   echo "${filename}"
-  $SIMULA top_cpu --ieee-asserts=disable-at-0 --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
+  $SIMULA top_cpu --max-stack-alloc=0 --stop-time=${CYCLES}ns ${WAVE}
 fi
 end=`date +%s`
 echo Execution time was `expr $end - $start` seconds.

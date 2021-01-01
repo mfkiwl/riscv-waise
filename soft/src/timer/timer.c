@@ -23,6 +23,35 @@ void increase_timer_interrupt(long long counter)
   *port_mtimecmp = val_mtimecmp;
 }
 
+void print_mcsr(uint64_t mcsr)
+{
+  char str[16];
+  char c;
+  uint8_t mod;
+  for (int i=15; i>=0; i--)
+  {
+    mod = mcsr % 16;
+    mcsr = mcsr / 16;
+    if (mod >= 10)
+    {
+      c = 'A' + mod - 10;
+    }
+    else
+    {
+      c = '0' + mod;
+    }
+    str[i] = c;
+  }
+  putch('0');
+  putch('x');
+  for (int i=0; i<16; i++)
+  {
+    putch(str[i]);
+  }
+  putch('\r');
+  putch('\n');
+}
+
 void handle_timer_interrupt()
 {
   increase_timer_interrupt(TIMER_COUNT);
@@ -60,6 +89,7 @@ void handle_timer_interrupt()
   {
     min = 0;
   }
+  __asm__("addi x2,x2,48");
   __asm__("mret");
 }
 
@@ -67,7 +97,9 @@ void init_timer_interrupt()
 {
   increase_timer_interrupt(TIMER_COUNT);
 
-  uintptr_t address = (uintptr_t) handle_timer_interrupt;
+  uintptr_t address;
+
+  __asm__("la %0,_mtvec" : "=r"(address));
 
   write_csr(mtvec,address);
 

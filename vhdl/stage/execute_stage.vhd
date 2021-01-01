@@ -131,7 +131,7 @@ begin
 
 		v.clear := csr_eo.exc or csr_eo.mret or d.e.jump or d.w.clear;
 
-		v.enable := not(d.e.stall or d.m.stall or d.w.stall);
+		v.enable := not(d.e.stall or d.m.stall or d.w.stall or d.w.clear);
 
 		fpu_exe_i.idata <= v.rdata1;
 
@@ -265,6 +265,7 @@ begin
 			v.exc := '0';
 			v.mret := '0';
 			v.jump := '0';
+			v.valid := '0';
 		end if;
 
 		if v.clear = '1' then
@@ -277,25 +278,20 @@ begin
 		dmem_i.mem_wdata <= store_data(v.sdata, v.store_op);
 		dmem_i.mem_wstrb <= v.strobe;
 
-		csr_ei.epc <= v.pc;
-		if v.valid = '0' then
-			if d.e.valid = '1' then
-				csr_ei.epc <= d.e.pc;
-			elsif d.m.valid = '1' then
-				csr_ei.epc <= d.m.pc;
-			elsif d.w.valid = '1' then
-				csr_ei.epc <= d.w.pc;
-			end if;
-		end if;
+		csr_ei.d_epc <= v.pc;
+		csr_ei.e_epc <= d.e.pc;
+		csr_ei.m_epc <= d.m.pc;
+		csr_ei.w_epc <= d.w.pc;
+		csr_ei.d_valid <= v.valid;
+		csr_ei.e_valid <= d.e.valid;
+		csr_ei.m_valid <= d.m.valid;
+		csr_ei.w_valid <= d.w.valid;
 		csr_ei.exc <= v.exc;
 		csr_ei.etval <= v.etval;
 		csr_ei.ecause <= v.ecause;
 		csr_ei.ecall <= v.ecall;
 		csr_ei.ebreak <= v.ebreak;
 		csr_ei.mret <= v.mret;
-
-		if (time_irpt or ext_irpt) = '1' then
-		end if;
 
 		csr_ei.time_irpt <= time_irpt;
 		csr_ei.ext_irpt <= ext_irpt;
@@ -341,7 +337,9 @@ begin
 		y.ebreak <= v.ebreak;
 		y.mret <= v.mret;
 		y.valid <= v.valid;
+		y.jump <= v.jump;
 		y.stall <= v.stall;
+		y.clear <= v.clear;
 
 		q.pc <= r.pc;
 		q.npc <= r.npc;
@@ -382,7 +380,9 @@ begin
 		q.ebreak <= r.ebreak;
 		q.mret <= r.mret;
 		q.valid <= r.valid;
+		q.jump <= r.jump;
 		q.stall <= r.stall;
+		q.clear <= r.clear;
 
 	end process;
 

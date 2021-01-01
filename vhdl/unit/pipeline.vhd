@@ -39,12 +39,12 @@ architecture behavior of pipeline is
 			reset    : in  std_logic;
 			clock    : in  std_logic;
 			csr_eo   : in  csr_exception_out_type;
-			btb_o    : in  btb_out_type;
-			btb_i    : out btb_in_type;
+			bp_o     : in  bp_out_type;
+			bp_i     : out bp_in_type;
 			pfetch_o : in  prefetch_out_type;
 			pfetch_i : out prefetch_in_type;
-			imem_o   : in  mem_out_type;
-			imem_i   : out mem_in_type;
+			icache_o : in  cache_out_type;
+			icache_i : out cache_in_type;
 			ipmp_o   : in  pmp_out_type;
 			ipmp_i   : out pmp_in_type;
 			a        : in  fetch_in_type;
@@ -158,6 +158,30 @@ architecture behavior of pipeline is
 		);
 	end component;
 
+	component bp
+		port(
+			reset : in  std_logic;
+			clock : in  std_logic;
+			bp_i  : in  bp_in_type;
+			bp_o  : out bp_out_type;
+			bht_i : out bht_in_type;
+			bht_o : in  bht_out_type;
+			btb_i : out btb_in_type;
+			btb_o : in  btb_out_type;
+			ras_i : out ras_in_type;
+			ras_o : in  ras_out_type
+		);
+	end component;
+
+	component bht
+		port(
+			reset : in  std_logic;
+			clock : in  std_logic;
+			bht_i : in  bht_in_type;
+			bht_o : out bht_out_type
+		);
+	end component;
+
 	component btb
 		port(
 			reset : in  std_logic;
@@ -167,14 +191,39 @@ architecture behavior of pipeline is
 		);
 	end component;
 
+	component ras
+		port(
+			reset : in  std_logic;
+			clock : in  std_logic;
+			ras_i : in  ras_in_type;
+			ras_o : out ras_out_type
+		);
+	end component;
+
 	component prefetch
 		port(
-			reset    : in  std_logic;
-			clock    : in  std_logic;
-			pfetch_i : in  prefetch_in_type;
-			pfetch_o : out prefetch_out_type
+			reset     : in  std_logic;
+			clock     : in  std_logic;
+			pfetch_i  : in  prefetch_in_type;
+			pfetch_o  : out prefetch_out_type
   	);
   end component;
+
+	component cache
+		generic(
+			cache_enable    : boolean;
+			cache_type      : integer;
+			cache_set_depth : integer
+		);
+		port(
+			reset   : in  std_logic;
+			clock   : in  std_logic;
+			cache_i : in  cache_in_type;
+			cache_o : out cache_out_type;
+			mem_o   : in  mem_out_type;
+			mem_i   : out mem_in_type
+		);
+	end component;
 
 	component fpu
 		port(
@@ -214,11 +263,26 @@ architecture behavior of pipeline is
 	signal int_unit_i : int_unit_in_type;
 	signal int_unit_o : int_unit_out_type;
 
+	signal bp_i : bp_in_type;
+	signal bp_o : bp_out_type;
+
+	signal bht_i : bht_in_type;
+	signal bht_o : bht_out_type;
+
 	signal btb_i : btb_in_type;
 	signal btb_o : btb_out_type;
 
+	signal ras_i : ras_in_type;
+	signal ras_o : ras_out_type;
+
 	signal pfetch_i : prefetch_in_type;
 	signal pfetch_o : prefetch_out_type;
+
+	signal pbuffer_i : prebuffer_in_type;
+	signal pbuffer_o : prebuffer_out_type;
+
+	signal icache_i : cache_in_type;
+	signal icache_o : cache_out_type;
 
 	signal fpu_dec_i : fpu_dec_in_type;
 	signal fpu_dec_o : fpu_dec_out_type;
@@ -235,12 +299,12 @@ begin
 			reset    => reset,
 			clock    => clock,
 			csr_eo   => csr_unit_o.csr_eo,
-			btb_o    => btb_o,
-			btb_i    => btb_i,
+			bp_o     => bp_o,
+			bp_i     => bp_i,
 			pfetch_o => pfetch_o,
 			pfetch_i => pfetch_i,
-			imem_o   => imem_o,
-			imem_i   => imem_i,
+			icache_o => icache_o,
+			icache_i => icache_i,
 			ipmp_o   => ipmp_o,
 			ipmp_i   => ipmp_i,
 			a.f      => fetch_y,
@@ -386,6 +450,28 @@ begin
 			int_unit_o => int_unit_o
 		);
 
+	bp_comp : bp
+		port map(
+			reset => reset,
+			clock => clock,
+			bp_i  => bp_i,
+			bp_o  => bp_o,
+			bht_i => bht_i,
+			bht_o => bht_o,
+			btb_i => btb_i,
+			btb_o => btb_o,
+			ras_i => ras_i,
+			ras_o => ras_o
+		);
+
+	bht_comp : bht
+		port map(
+			reset => reset,
+			clock => clock,
+			bht_i => bht_i,
+			bht_o => bht_o
+		);
+
 	btb_comp : btb
 		port map(
 			reset => reset,
@@ -394,12 +480,35 @@ begin
 			btb_o => btb_o
 		);
 
+	ras_comp : ras
+		port map(
+			reset => reset,
+			clock => clock,
+			ras_i => ras_i,
+			ras_o => ras_o
+		);
+
 	prefetch_comp : prefetch
 		port map(
-			reset    => reset,
-			clock    => clock,
-			pfetch_i => pfetch_i,
-			pfetch_o => pfetch_o
+			reset     => reset,
+			clock     => clock,
+			pfetch_i  => pfetch_i,
+			pfetch_o  => pfetch_o
+		);
+
+	icache_comp : cache
+		generic map (
+			cache_enable    => icache_enable,
+			cache_type      => icache_type,
+			cache_set_depth => icache_set_depth
+		)
+		port map(
+			reset   => reset,
+			clock   => clock,
+			cache_i => icache_i,
+			cache_o => icache_o,
+			mem_o   => imem_o,
+			mem_i   => imem_i
 		);
 
 	FP_Unit : if fpu_enable = true generate

@@ -82,6 +82,8 @@ begin
 			v.clear := '1';
 		elsif d.e.jump = '0' and d.f.taken = '1' then
 			v.clear := '1';
+		elsif d.e.jump = '1' and d.f.taken = '1' and or_reduce(d.e.address xor d.f.pc) = '1' then
+			v.clear := '1';
 		end if;
 
 		v.opcode := v.instr(6 downto 0);
@@ -324,6 +326,7 @@ begin
 			v.exc := '0';
 			v.mret := '0';
 			v.fence := '0';
+			v.valid := '0';
 		end if;
 
 		if v.clear = '1' then
@@ -377,6 +380,7 @@ begin
 		y.fence <= v.fence;
 		y.valid <= v.valid;
 		y.stall <= v.stall;
+		y.clear <= v.clear;
 
 		q.pc <= r.pc;
 		q.npc <= r.npc;
@@ -423,6 +427,7 @@ begin
 		q.fence <= r.fence;
 		q.valid <= r.valid;
 		q.stall <= r.stall;
+		q.clear <= r.clear;
 
 	end process;
 

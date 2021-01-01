@@ -175,6 +175,8 @@ architecture behavior of cpu is
 		if data = X"0A" then
 			write(buf, info);
 			writeline(output, buf);
+			write(buf,to_string(now, ns));
+			writeline(output, buf);
 			info <= (others => character'val(0));
 			counter <= 1;
 		else
@@ -190,18 +192,24 @@ begin
 
 	begin
 
-		if (unsigned(memory_addr) >= unsigned(timer_base_addr) and
-				unsigned(memory_addr) < unsigned(timer_top_addr)) then
-			bram_valid <= '0';
-			uart_valid <= '0';
-			timer_valid <= memory_valid;
-		elsif (unsigned(memory_addr) >= unsigned(uart_base_addr) and
-				unsigned(memory_addr) < unsigned(uart_top_addr)) then
-			bram_valid <= '0';
-			uart_valid <= memory_valid;
-			timer_valid <= '0';
+		if memory_valid = '1' then
+			if (unsigned(memory_addr) >= unsigned(timer_base_addr) and
+					unsigned(memory_addr) < unsigned(timer_top_addr)) then
+				bram_valid <= '0';
+				uart_valid <= '0';
+				timer_valid <= memory_valid;
+			elsif (unsigned(memory_addr) >= unsigned(uart_base_addr) and
+					unsigned(memory_addr) < unsigned(uart_top_addr)) then
+				bram_valid <= '0';
+				uart_valid <= memory_valid;
+				timer_valid <= '0';
+			else
+				bram_valid <= memory_valid;
+				uart_valid <= '0';
+				timer_valid <= '0';
+			end if;
 		else
-			bram_valid <= memory_valid;
+			bram_valid <= '0';
 			uart_valid <= '0';
 			timer_valid <= '0';
 		end if;
